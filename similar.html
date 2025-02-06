@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image to Question Generator</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      text-align: center;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+    }
+    .output {
+      margin-top: 20px;
+    }
+    img {
+      max-width: 100%;
+      margin-top: 20px;
+    }
+    .questions {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Numerical Problem Generator</h1>
+    <p>Upload an image with a math problem (e.g., 12 + 5)</p>
+    <input type="file" id="imageUpload" accept="image/*"><br>
+    <div class="output" id="output"></div>
+    <div class="questions" id="questions"></div>
+  </div>
+
+  <script>
+    const imageUpload = document.getElementById("imageUpload");
+    const outputDiv = document.getElementById("output");
+    const questionsDiv = document.getElementById("questions");
+
+    imageUpload.addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = document.createElement("img");
+        img.src = reader.result;
+        outputDiv.innerHTML = "";
+        outputDiv.appendChild(img);
+
+        // Extract text using Tesseract.js
+        Tesseract.recognize(reader.result, "eng")
+          .then(({ data: { text } }) => {
+            outputDiv.innerHTML += `<p>Extracted Problem: ${text.trim()}</p>`;
+            const parsedProblem = parseProblem(text.trim());
+            if (parsedProblem) {
+              const similarQuestions = generateSimilarQuestions(parsedProblem);
+              questionsDiv.innerHTML = `<p>Similar Questions:</p><ul>${similarQuestions
+                .map((q) => `<li>${q}</li>`)
+                .join("")}</ul>`;
+            } else {
+              questionsDiv.innerHTML = "<p>Could not parse a math problem.</p>";
+            }
+          })
+          .catch((error) => {
+            outputDiv.innerHTML += `<p>Error: ${error.message}</p>`;
+          });
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Parse the problem to extract numbers and operator
+    function parseProblem(problemText) {
+      const regex = /(\d+)\s*([\+\-\*\/])\s*(\d+)/;
+      const match = problemText.match(regex);
+      if (match) {
+        return { num1: parseInt(match[1]), operator: match[2], num2: parseInt(match[3]) };
+      }
+      return null;
+    }
+
+    // Generate similar questions
+    function generateSimilarQuestions({ num1, operator, num2 }) {
+      const questions = [];
+      for (let i = 0; i < 5; i++) {
+        const newNum1 = num1 + Math.floor(Math.random() * 10) - 5;
+        const newNum2 = num2 + Math.floor(Math.random() * 10) - 5;
+        questions.push(`${newNum1} ${operator} ${newNum2}`);
+      }
+      return questions;
+    }
+  </script>
+</body>
+</html>

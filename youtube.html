@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image to Math Solution & Video</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+        }
+        #output {
+            margin-top: 20px;
+        }
+        #videoResults iframe {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload Image to Solve Math Problems</h1>
+    <input type="file" id="imageUpload" accept="image/*">
+    <div id="output">
+        <p id="solution"></p>
+        <p id="debugText" style="color: gray;"></p>
+        <div id="videoResults"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.0.2/tesseract.min.js"></script>
+    <script>
+        const imageUpload = document.getElementById('imageUpload');
+        const solution = document.getElementById('solution');
+        const debugText = document.getElementById('debugText');
+        const videoResults = document.getElementById('videoResults');
+             
+        async function fetchVideos(query) {
+    const apiKey = 'AIzaSyBNmvJD-fo4DPEP6pDd6FwdGZW11fugVp4'; // Replace with your YouTube API key
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=3&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`;
+    videoResults.innerHTML = 'Fetching related videos...';
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        videoResults.innerHTML = '';
+        if (data.items && data.items.length > 0) {
+            data.items.forEach(item => {
+                const iframe = document.createElement('iframe');
+                iframe.width = '560';
+                iframe.height = '315';
+                iframe.src = `https://www.youtube.com/embed/${item.id.videoId}`;
+                iframe.frameBorder = '0';
+                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+                iframe.allowFullscreen = true;
+                videoResults.appendChild(iframe);
+            });
+        } else {
+            videoResults.innerHTML = 'No relevant videos found for the query.';
+        }
+    } catch (err) {
+        videoResults.innerHTML = 'Error fetching YouTube videos.';
+        console.error('YouTube API Error:', err);
+    }
+}
+
+
+    function preprocessText(text) {
+        return text
+            .replace(/[|]/g, '1')     // Replace '|' with '1'
+            .replace(/[\*X]/g, 'X')    // Handle * and X as multiplication
+            .replace(/[\/÷]/g, '/')    // Handle / and ÷ as division
+            .replace(/[^\d\+\-\*\/\sX÷]/g, '') // Remove unwanted characters
+            .trim();
+    }
+
+    // Detect Math Problem
+    function detectMathProblem(cleanedText) {
+        const mathPattern = /(\d+)\s*([\+\-\*\/X÷])\s*(\d+)/; // Handle both * and X for multiplication, / and ÷ for division
+        const derivationPattern = /derivative|d\/dx|derivate/i;
+        const integrationPattern = /integration|integral/i;
+
+        if (mathPattern.test(cleanedText)) {
+            const [, num1, operator, num2] = cleanedText.match(mathPattern);
+            const operationType = detectOperation(operator);
+            const query = getQueryForOperation(operationType, num1, num2); // Simplified query
+            return {
+                type: operationType,
+                query: query,
+                detectedProblem: `${num1} ${operator} ${num2}`
+            };
+        } else if (derivationPattern.test(cleanedText)) {
+            return {
+                type: "Derivation",
+                query: "derivation tutorial step by step",
+                detectedProblem: "Derivation"
+            };
+        } else if (integrationPattern.test(cleanedText)) {
+            return {
+                type: "Integration",
+                query: "integration tutorial step by step",
+                detectedProblem: "Integration"
+            };
+        }
+        return null;
+    }
+
+    // Detect Operation
+    function detectOperation(operator) {
+        switch (operator) {
+            case '+':
+                return 'Addition';
+            case '-':
+                return 'Subtraction';
+            case 'X':
+            case '*':
+                return 'Multiplication';
+            case '/':
+            case '÷':
+                return 'Division';
+            default:
+                return 'Math Operation';
+        }
+    }
+
+    // Simplified query for operations
+    function getQueryForOperation(operation, num1, num2) {
+        switch (operation) {
+            case 'Addition':
+                return `addition tutorial ${num1} + ${num2}`;
+            case 'Subtraction':
+                return `subtraction tutorial ${num1} - ${num2}`;
+            case 'Multiplication':
+                // Handle both * and X for multiplication
+                return `multiplication tutorial ${num1} * ${num2}`;
+            case 'Division':
+                return `division tutorial ${num1} / ${num2}`;
+            default:
+                return 'basic math tutorial';
+        }
+    }
+
+    // Fetch Videos
+    async function fetchVideos(query) {
+        const apiKey = 'AIzaSyBNmvJD-fo4DPEP6pDd6FwdGZW11fugVp4'; // Replace with your YouTube API key
+        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=3&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`;
+        videoResults.innerHTML = 'Fetching related videos...';
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            videoResults.innerHTML = '';
+            if (data.items && data.items.length > 0) {
+                data.items.forEach(item => {
+                    const iframe = document.createElement('iframe');
+                    iframe.width = '560';
+                    iframe.height = '315';
+                    iframe.src = `https://www.youtube.com/embed/${item.id.videoId}`;
+                    iframe.frameBorder = '0';
+                    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+                    iframe.allowFullscreen = true;
+                    videoResults.appendChild(iframe);
+                });
+            } else {
+                videoResults.innerHTML = 'No relevant videos found for the query.';
+            }
+        } catch (err) {
+            videoResults.innerHTML = 'Error fetching YouTube videos.';
+            console.error('YouTube API Error:', err);
+        }
+    }
+
+    // Event Listener for Image Upload
+    imageUpload.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) {
+            alert('Please upload an image.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            solution.textContent = 'Processing image...';
+            debugText.textContent = '';
+
+            try {
+                const result = await Tesseract.recognize(img.src, 'eng', {
+                    logger: (info) => console.log(info),
+                });
+                const extractedText = result.data.text.trim();
+                debugText.textContent = `Raw Extracted Text: ${extractedText}`;
+
+                // Preprocess text to handle OCR issues
+                const cleanedText = preprocessText(extractedText);
+                debugText.textContent += `\nCleaned Text: ${cleanedText}`;
+                const problemDetails = detectMathProblem(cleanedText);
+
+                if (problemDetails) {
+                    solution.textContent = `Detected Problem: ${problemDetails.detectedProblem} (${problemDetails.type})`;
+                    debugText.textContent += `\nGenerated Query: ${problemDetails.query}`; // Log the query
+                    fetchVideos(problemDetails.query);
+                } else {
+                    solution.textContent = `No specific math problem detected. Showing general math tutorials.`;
+                    fetchVideos('basic math tutorial');
+                }
+            } catch (err) {
+                solution.textContent = 'Error extracting text from image.';
+                console.error('OCR Error:', err);
+            }
+        };
+        reader.readAsDataURL(file);
+    });
+</script>
+</body>
+</html>

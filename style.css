@@ -727,3 +727,12 @@ h1 {
     font-size: 2rem; /* Adjust size as needed */
     margin-bottom: 20px; /* Add spacing below the title */
 }
+#youtubeVideoSection {
+    margin-top: 20px;
+    text-align: center;
+}
+
+#youtubeVideoContainer iframe {
+    max-width: 100%;
+    height: auto;
+}
